@@ -869,14 +869,16 @@
 
   // ---------- Start ----------
   (async () => {
-    log("Click Next hand to begin.");
-    nextHandBtn.disabled = false;
-    foldBtn.disabled = true;
-    callBtn.disabled = true;
-    raiseBtn.disabled = true;
-    amtRange.disabled = true;
-    render();
-  })();
+  log("Click Next hand to begin.");
+  game.handOver = true;   // <-- add this line
+  game.stage = "idle";    // optional, but clearer
+  nextHandBtn.disabled = false;
+  foldBtn.disabled = true;
+  callBtn.disabled = true;
+  raiseBtn.disabled = true;
+  amtRange.disabled = true;
+  render();
+})();
 
 })();
 </script>

@@ -229,9 +229,9 @@
 
   const players = [
     mkPlayer(0, "You", true,  { tight: 0.45, aggro: 0.55, bluff: 0.20 }),
-    mkPlayer(1, "Mara", false, { tight: 0.65, aggro: 0.50, bluff: 0.10 }),
-    mkPlayer(2, "Holt", false, { tight: 0.45, aggro: 0.70, bluff: 0.25 }),
-    mkPlayer(3, "Inez", false, { tight: 0.35, aggro: 0.40, bluff: 0.30 }),
+    mkPlayer(1, "Mara", false, { tight: 0.72, aggro: 0.30, bluff: 0.05 }),
+    mkPlayer(2, "Holt", false, { tight: 0.55, aggro: 0.40, bluff: 0.10 }),
+    mkPlayer(3, "Inez", false, { tight: 0.42, aggro: 0.30, bluff: 0.12 }),
   ];
 
   const game = {
@@ -516,7 +516,7 @@
 
   function aiChooseAction(p){
     const toCall = game.currentBet - p.streetBet;
-    const maxTo = p.streetBet + p.stack;
+    const maxTo = aiMaxTo(p);
 
     const persona = p.persona;
     const rnd = Math.random();
@@ -526,15 +526,15 @@
     const s = clamp((strength - 10) / 10, 0, 1); // 0..1-ish
 
     // thresholds biased by tightness
-    const foldThresh = 0.25 + persona.tight*0.35;
-    const raiseThresh = 0.55 - persona.aggro*0.15;
+    const foldThresh = 0.30 + persona.tight*0.40;     // fold more when weak
+    const raiseThresh = 0.68 - persona.aggro*0.10;    // require stronger hand to raise
 
     if (toCall > 0){
       if (s < foldThresh && rnd > persona.bluff) return { type: "fold" };
 
       // decide raise?
       const canRaise = (maxTo >= minRaiseTo());
-      const bluff = (rnd < persona.bluff) && (s < raiseThresh);
+      const bluff = (rnd < persona.bluff * 0.5) && (s < raiseThresh);
 
       if (canRaise && (s > raiseThresh || bluff)){
         const minTo = minRaiseTo();
@@ -573,6 +573,21 @@
   function minRaiseTo(){
     if (game.currentBet === 0) return BIG_BLIND; // minimum bet size
     return game.currentBet + game.lastRaiseSize;
+  }
+
+  function aiMaxTo(p){
+  const maxTo = p.streetBet + p.stack;
+
+  // Preflop: keep opens/3-bets reasonable
+  if (game.stage === "preflop"){
+    // typical open/raise sizes in this toy game: 3–6 BB total
+    const cap = Math.max(minRaiseTo(), game.currentBet + 4*BIG_BLIND);
+    return Math.min(maxTo, cap);
+  }
+
+  // Postflop: cap to roughly 0.75 pot over the current bet (still “poker-like”)
+  const cap = Math.max(minRaiseTo(), game.currentBet + Math.max(Math.floor(game.pot * 0.75), 3*BIG_BLIND));
+  return Math.min(maxTo, cap);
   }
 
   function updateActionUI(){
